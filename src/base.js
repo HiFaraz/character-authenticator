@@ -18,19 +18,17 @@ module.exports = class BaseAuthenticator {
    *
    * @param {string} name
    * @param {Object} config
-   * @param {Object} database
    * @param {Object} deps
-   * @param {Object} events
+   * @param {Object} character
    */
-  constructor(name, config, database, deps, events) {
+  constructor(name, config, deps, character) {
     this.debug = require('debug')(
       `character:authentication:authenticator:${name}`,
     );
 
+    this.character = character;
     this.config = clone(config);
-    this.database = database;
     this.deps = deps;
-    this.events = events;
     this.name = name;
 
     this.router = Router();
@@ -48,7 +46,7 @@ module.exports = class BaseAuthenticator {
   attachModels() {
     const prefix = `Authentication$${capitalize(this.name)}$`;
     this.models = {};
-    forEach(this.database.models, (model, name) => {
+    forEach(this.character.database.models, (model, name) => {
       if (name.startsWith(prefix)) {
         this.models[name.slice(prefix.length)] = model;
       }
@@ -113,7 +111,10 @@ module.exports = class BaseAuthenticator {
    */
   findIdentity(account) {
     // TODO similar to authenticators, make it easier for plugins to access their own models. Create this in `CorePlugin`
-    const { Authentication$Account, Core$Identity } = this.database.models;
+    const {
+      Authentication$Account,
+      Core$Identity,
+    } = this.character.database.models;
     // TODO plugins shouldn't perform operations on Core$Identity - these should be services from the framework
     return Core$Identity.findOne({
       attributes: ['id'],
@@ -173,7 +174,7 @@ module.exports = class BaseAuthenticator {
         throw error;
       }
     }
-    this.events.emit('authentication:authenticate', {
+    this.character.emit('authentication:authenticate', {
       datetime: new Date(),
       user,
     });
@@ -189,7 +190,10 @@ module.exports = class BaseAuthenticator {
    */
   async onboard(account) {
     // TODO similar to authenticators, make it easier for plugins to access their own models. Create this in `CorePlugin`
-    const { Authentication$Account, Core$Identity } = this.database.models;
+    const {
+      Authentication$Account,
+      Core$Identity,
+    } = this.character.database.models;
     const identity = (await Core$Identity.create(
       {
         authentication$Accounts: [
@@ -203,7 +207,7 @@ module.exports = class BaseAuthenticator {
         include: [Authentication$Account],
       },
     )).get({ plain: true });
-    this.events.emit('authentication:onboard', {
+    this.character.emit('authentication:onboard', {
       account,
       datetime: new Date(),
       identity,
