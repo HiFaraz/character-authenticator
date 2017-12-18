@@ -9,6 +9,7 @@ import { clone, forEach } from 'lodash';
 import { Router } from 'express';
 import asyncpipe from 'asyncpipe';
 import capitalize from 'capitalize';
+import createError from 'http-errors';
 import { STATUS_CODES as httpCodeMessage } from 'http';
 import queryString from 'querystring';
 
@@ -68,11 +69,10 @@ module.exports = class BaseAuthenticator {
      *
      * return { id: ... };
      */
-    const error = new Error(
+    throw createError(
+      INTERNAL_SERVER_ERROR,
       `Authenticator#authenticate must be subclassed. My name: ${this.name}`,
     );
-    error.httpStatusCode = INTERNAL_SERVER_ERROR;
-    throw error;
   }
 
   /**
@@ -169,9 +169,7 @@ module.exports = class BaseAuthenticator {
         user.id = newIdentity.id;
       } else {
         // only accept recognized core identities
-        const error = new Error('Could not find identity for account');
-        error.httpStatusCode = NOT_FOUND;
-        throw error;
+        throw createError(NOT_FOUND, 'Could not find identity for account');
       }
     }
     this.character.emit('authentication:authenticate', {
@@ -249,7 +247,7 @@ module.exports = class BaseAuthenticator {
     } catch (error) {
       this.debug('error authenticating', error);
       const query = queryString.stringify({
-        reason: httpCodeMessage[error.httpStatusCode || INTERNAL_SERVER_ERROR],
+        reason: httpCodeMessage[error.statusCode || INTERNAL_SERVER_ERROR],
       });
       return res.redirect(SEE_OTHER, `${this.config.failureRedirect}?${query}`);
     }

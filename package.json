@@ -36,6 +36,7 @@
     "asyncpipe": "^1.0.0",
     "capitalize": "^1.0.0",
     "http-codes": "^1.0.0",
+    "http-errors": "^1.6.2",
     "lodash": "^4.17.4"
   },
   "peerDependencies": {
